@@ -18,7 +18,7 @@ export const readOnlyWallet = {
 export function getProgram(wallet) {
   if (!idl || !idl.instructions) throw new Error('Paste your program IDL into src/idl.json');
   const provider = new AnchorProvider(new Connection(RPC_URL, 'confirmed'), wallet, { commitment: 'confirmed' });
-  return new Program({ ...idl, address: PROGRAM_ID.toBase58() }, provider);
+  return new Program({ ...idl, address: PROGRAM_ID,provider);
 }
 
 export async function getBondSol(program) {
@@ -31,7 +31,7 @@ export async function createLaunch(program, wallet, { name, symbol, uri }) {
   const launch = pda([b('launch'), mint.publicKey.toBuffer()]);
   const sig = await program.methods
     .createLaunch(name, symbol, uri)
-    .accountsPartial({
+    .accounts({
       config: configPda(),
       launch,
       mint: mint.publicKey,
@@ -94,7 +94,7 @@ export async function trade(program, wallet, mintStr, side, amount, quote) {
   if (side === 'buy') {
     return program.methods
       .buy(new BN(Math.floor(amount * 1e9)), new BN(Math.floor(quote * 1e6 * 0.95)))
-      .accountsPartial({
+      .accounts({
         ...common,
         position: pda([b('pos'), launch.toBuffer(), user.toBuffer()]),
         flag: pda([b('flag'), user.toBuffer()]),
@@ -107,6 +107,6 @@ export async function trade(program, wallet, mintStr, side, amount, quote) {
   }
   return program.methods
     .sell(new BN(Math.floor(amount * 1e6)), new BN(Math.floor(quote * 1e9 * 0.95)))
-    .accountsPartial({ ...common, sellerAta: ata, seller: user })
+    .accounts({ ...common, sellerAta: ata, seller: user })
     .rpc();
 }
