@@ -110,3 +110,45 @@ export async function trade(program, wallet, mintStr, side, amount, quote) {
     .accounts({ ...common, sellerAta: ata, seller: user })
     .rpc();
 }
+export async function getAdmin(program) {
+  const cfg = await program.account.config.fetch(configPda());
+  return {
+    admin: cfg.admin.toBase58(),
+    paused: cfg.paused,
+    feesOwed: Number(cfg.ownerFeesOwed.toString()) / 1e9,
+  };
+}
+
+export const setPaused = (program, wallet, paused) =>
+  program.methods.setPaused(paused)
+    .accounts({ config: configPda(), admin: wallet.publicKey })
+    .rpc();
+
+export const withdrawFees = (program, wallet) =>
+  program.methods.withdrawFees()
+    .accounts({ config: configPda(), admin: wallet.publicKey })
+    .rpc();
+
+export function flagWallet(program, wallet, walletStr) {
+  const w = new PublicKey(walletStr);
+  return program.methods.flagWallet()
+    .accounts({
+      config: configPda(),
+      wallet: w,
+      flag: pda([b('flag'), w.toBuffer()]),
+      admin: wallet.publicKey,
+      systemProgram: SystemProgram.programId,
+    })
+    .rpc();
+}
+
+export function unflagWallet(program, wallet, walletStr) {
+  const w = new PublicKey(walletStr);
+  return program.methods.unflagWallet()
+    .accounts({
+      config: configPda(),
+      flag: pda([b('flag'), w.toBuffer()]),
+      admin: wallet.publicKey,
+    })
+    .rpc();
+}
