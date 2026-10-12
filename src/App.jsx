@@ -4,7 +4,7 @@ import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { getProgram, readOnlyWallet, createLaunch, trade, getQuote, getBondSol } from './chain';
 import { getLeaderboard, getLaunches, getCandles } from './api';
 import Chart from './Chart';
-
+import { uploadMetadata } from './upload';
 const short = (s) => (s && s.length > 10 ? s.slice(0, 4) + '…' + s.slice(-4) : s);
 const errMsg = (e) => e?.error?.errorMessage || e?.message || 'Something went wrong';
 
