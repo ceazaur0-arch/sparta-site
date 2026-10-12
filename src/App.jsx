@@ -29,7 +29,7 @@ export default function App() {
   const [boardType, setBoardType] = useState('traders');
   const [names, setNames] = useState({}); const [username, setUsername] = useState(''); const { signMessage } = useWallet();
   const [board, setBoard] = useState([]);
-
+const preview = useMemo(() => (file ? URL.createObjectURL(file) : ''), [file]);
   const loadLaunches = () => getLaunches().then(setLaunches).catch(() => setLaunches([]));
   useEffect(() => { loadLaunches(); }, []);
   useEffect(() => { if (board.length) getUsernames(board.map(r => r.id)).then(setNames).catch(() => {}); }, [board]);
@@ -112,7 +112,11 @@ export default function App() {
                 <div><label className="field">Creator bond (SOL)</label><input className="input" readOnly value={bond ?? '—'} /></div>
               </div>
               <label className="field">Token image</label>
-          <input className="input" type="file" accept="image/*" onChange={(e) => setFile(e.target.files[0] || null)} />
+         <label className="img-circle">
+  <input type="file" accept="image/*" hidden onChange={(e) => setFile(e.target.files[0] || null)} />
+  {preview ? <img src={preview} alt="" /> : <span>+ Image</span>}
+</label>
+{file && <p className="note">{file.name}</p>}
               <button className="btn primary" style={{ width: '100%', marginTop: 20 }} disabled={busy} onClick={onLaunch}>⚔ Launch token</button>
               <p className="note">The bond is set by the platform and returned after the release period.</p>
             </div>
