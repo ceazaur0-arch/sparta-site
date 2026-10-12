@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useAnchorWallet } from '@solana/wallet-adapter-react';
+import { useAnchorWallet, useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { getProgram, readOnlyWallet, createLaunch, trade, getQuote, getBondSol } from './chain';
-import { getLeaderboard, getLaunches, getCandles } from './api';
+import { getLeaderboard, getLaunches, getCandles, saveProfile, getUsernames } from './api';
 import Chart from './Chart';
 import { uploadMetadata } from './upload';
 const short = (s) => (s && s.length > 10 ? s.slice(0, 4) + '…' + s.slice(-4) : s);
@@ -27,10 +27,12 @@ export default function App() {
   const [candles, setCandles] = useState(null);
   const [launches, setLaunches] = useState([]);
   const [boardType, setBoardType] = useState('traders');
+  const [names, setNames] = useState({}); const [username, setUsername] = useState(''); const { signMessage } = useWallet();
   const [board, setBoard] = useState([]);
 
   const loadLaunches = () => getLaunches().then(setLaunches).catch(() => setLaunches([]));
   useEffect(() => { loadLaunches(); }, []);
+  useEffect(() => { if (board.length) getUsernames(board.map(r => r.id)).then(setNames).catch(() => {}); }, [board]);
   useEffect(() => { getLeaderboard(boardType).then(setBoard).catch(() => setBoard([])); }, [boardType]);
   useEffect(() => { if (program) getBondSol(program).then(setBond).catch(() => setBond(null)); }, [program]);
   useEffect(() => {
@@ -158,10 +160,22 @@ export default function App() {
                 <button key={t} type="button" className={t === boardType ? 'active' : ''} onClick={() => setBoardType(t)}>{t}</button>
               ))}
             </div></div>
+       <div className="panel" style={{ marginBottom: 16 }}>
+  <input className="input" maxLength={20} placeholder="Pick a username" value={username} onChange={(e) => setUsername(e.target.value)} />
+  <button className="btn primary" style={{ marginTop: 10 }} disabled={busy || !wallet || !username.trim()} onClick={async () => {
+    try {
+      if (!signMessage) return notify('This wallet cannot sign messages.');
+      const w = wallet.publicKey.toString();
+      const ok = await saveProfile(w, username.trim(), signMessage);
+      notify(ok ? 'Profile saved!' : 'Could not save profile.');
+      if (ok) setNames((n) => ({ ...n, [w]: username.trim() }));
+    } catch (e) { notify(errMsg(e)); }
+  }}>Save profile</button>
+</div>
           <div className="panel board">
             {board.length === 0 && <p className="muted">No data yet.</p>}
             {board.map((r, i) => (
-              <div className="board-row" key={r.id}><b>{i + 1}</b><span>{r.label || short(r.id)}</span><span>{r.trades ?? 0} trades</span><strong>{Number(r.volumeSol ?? 0).toFixed(2)} SOL</strong></div>
+              <div className="board-row" key={r.id}><b>{i + 1}</b><span>{names[r.id] || r.label || short(r.id)}</span><span>{r.trades ?? 0} trades</span><strong>{Number(r.volumeSol ?? 0).toFixed(2)} SOL</strong></div>
             ))}
           </div>
         </section>
