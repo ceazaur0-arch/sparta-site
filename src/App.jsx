@@ -16,7 +16,7 @@ export default function App() {
   const timer = useRef();
   const notify = (m) => { setToast(m); clearTimeout(timer.current); timer.current = setTimeout(() => setToast(''), 4000); };
 
-  const [form, setForm] = useState({ name: '', symbol: '', uri: '' });
+  const [form, setForm] = useState({ name: '', symbol: '', uri: '' }); const [file, setFile] = useState(null);
   const [bond, setBond] = useState(null);
   const [mint, setMint] = useState('');
   const [side, setSide] = useState('buy');
@@ -49,10 +49,10 @@ export default function App() {
     if (!wallet) return notify('Connect your wallet first.');
     if (!program) return notify('Paste your program IDL into src/idl.json.');
     if (!form.name.trim() || !form.symbol.trim()) return notify('Add a token name and ticker first.');
-    if (form.uri && !/^https?:\/\//i.test(form.uri)) return notify('Metadata URI must start with https://');
+    if (!file && !form.uri) return notify('Choose an image first.');
     setBusy(true);
-    try {
-      const r = await createLaunch(program, wallet, { name: form.name.trim(), symbol: form.symbol.trim().toUpperCase(), uri: form.uri.trim() });
+    try { const uri = file ? await uploadMetadata({ name: form.name.trim(), symbol: form.symbol.trim(), description: '', file }) : form.uri;
+      const r = await createLaunch(program, wallet, { name: form.name.trim(), symbol: form.symbol.trim().toUpperCase(), uri});
       setMint(r.mint); notify('Launched! Mint: ' + short(r.mint)); setTimeout(loadLaunches, 4000);
     } catch (e) { notify(errMsg(e)); }
     setBusy(false);
@@ -109,8 +109,8 @@ export default function App() {
                 <div><label className="field">Ticker symbol</label><input className="input" maxLength={10} placeholder="e.g. SPDOG" value={form.symbol} onChange={(e) => setForm({ ...form, symbol: e.target.value })} /></div>
                 <div><label className="field">Creator bond (SOL)</label><input className="input" readOnly value={bond ?? '—'} /></div>
               </div>
-              <label className="field">Metadata URI</label>
-              <input className="input" type="url" placeholder="https://.../metadata.json" value={form.uri} onChange={(e) => setForm({ ...form, uri: e.target.value })} />
+              <label className="field">Token image</label>
+          <input className="input" type="file" accept="image/*" onChange={(e) => setFile(e.target.files[0] || null)} />
               <button className="btn primary" style={{ width: '100%', marginTop: 20 }} disabled={busy} onClick={onLaunch}>⚔ Launch token</button>
               <p className="note">The bond is set by the platform and returned after the release period.</p>
             </div>
