@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAnchorWallet, useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
-import { getProgram, readOnlyWallet, createLaunch, trade, getQuote, getBondSol, getAdmin, setPaused, withdrawFees, flagWallet, unflagWallet } from './chain';
+import { getProgram, readOnlyWallet, createLaunch, trade, getQuote, getBondSol, getAdmin, setPaused, withdrawFees, flagWallet, unflagWallet, claimLocked, claimBond, claimCreatorFees, slashBond } from './chain';
 import { getLeaderboard, getLaunches, getCandles, saveProfile, getUsernames } from './api';
 import Chart from './Chart';
 import { uploadMetadata } from './upload';
@@ -191,6 +191,26 @@ async function runAdmin(fn, okMsg) {
             ))}
           </div>
         </section>
+        {wallet && (
+  <section id="claims">
+    <div className="section-head"><div><div className="eyebrow">Your tokens</div><h2>CLAIMS.</h2></div></div>
+    <div className="panel">
+      <p className="note">{mint ? 'Selected token: ' + short(mint) : 'Tap a token above, or paste a mint in the Trade box.'}</p>
+      <button className="btn primary" style={{ marginTop: 10 }} disabled={busy || !mint}
+        onClick={() => runAdmin(() => claimLocked(program, wallet, mint), 'Locked tokens claimed')}>
+        Claim locked tokens
+      </button>
+      <button className="btn primary" style={{ marginTop: 10 }} disabled={busy || !mint}
+        onClick={() => runAdmin(() => claimBond(program, wallet, mint), 'Bond claimed')}>
+        Claim bond (creator)
+      </button>
+      <button className="btn primary" style={{ marginTop: 10 }} disabled={busy || !mint}
+        onClick={() => runAdmin(() => claimCreatorFees(program, wallet, mint), 'Creator fees claimed')}>
+        Claim creator fees (creator)
+      </button>
+    </div>
+  </section>
+)}
 {isAdmin && (
   <section id="admin">
     <div className="section-head"><div><div className="eyebrow">Admin only</div><h2>CONTROL ROOM.</h2></div></div>
@@ -213,6 +233,10 @@ async function runAdmin(fn, okMsg) {
         onClick={() => runAdmin(() => unflagWallet(program, wallet, flagAddr), 'Wallet unflagged')}>
         Unflag wallet
       </button>
+      <button className="btn primary" style={{ marginTop: 16 }} disabled={busy || !mint}
+  onClick={() => { if (window.confirm('Slash the bond of the selected token? This cannot be undone.')) runAdmin(() => slashBond(program, wallet, mint), 'Bond slashed'); }}>
+  Slash bond of selected token
+</button>
     </div>
   </section>
 )}
