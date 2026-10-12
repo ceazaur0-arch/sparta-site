@@ -17,3 +17,20 @@
 .board-row:last-child{border-bottom:0}.board-row b{color:var(--amber)}
 .wallet-adapter-button{font-family:inherit!important;height:42px!important;border-radius:10px!important}
 button:disabled{opacity:.6;cursor:wait}
+.img-circle {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  border: 2px dashed #7c8cff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  cursor: pointer;
+  margin: 8px 0;
+}
+.img-circle img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
