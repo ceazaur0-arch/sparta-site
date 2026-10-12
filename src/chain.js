@@ -18,7 +18,7 @@ export const readOnlyWallet = {
 export function getProgram(wallet) {
   if (!idl || !idl.instructions) throw new Error('Paste your program IDL into src/idl.json');
   const provider = new AnchorProvider(new Connection(RPC_URL, 'confirmed'), wallet, { commitment: 'confirmed' });
-  return new Program({ ...idl, address: PROGRAM_ID,provider);
+  return new Program(idl, PROGRAM_ID, provider);
 }
 
 export async function getBondSol(program) {
