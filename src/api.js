@@ -17,4 +17,5 @@ export async function saveProfile(wallet, username, signMessage) {
   });
   return res.ok;
 }
-}
+export const getUsernames = (wallets) =>
+  fetch(`/.netlify/functions/profiles?wallets=${wallets.join(',')}`).then(r => r.json());
