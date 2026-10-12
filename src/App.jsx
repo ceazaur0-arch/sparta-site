@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAnchorWallet, useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
-import { getProgram, readOnlyWallet, createLaunch, trade, getQuote, getBondSol } from './chain';
+import { getProgram, readOnlyWallet, createLaunch, trade, getQuote, getBondSol, getAdmin, setPaused, withdrawFees, flagWallet, unflagWallet } from './chain';
 import { getLeaderboard, getLaunches, getCandles, saveProfile, getUsernames } from './api';
 import Chart from './Chart';
 import { uploadMetadata } from './upload';
@@ -30,11 +30,14 @@ export default function App() {
   const [names, setNames] = useState({}); const [username, setUsername] = useState(''); const { signMessage } = useWallet();
   const [board, setBoard] = useState([]);
 const preview = useMemo(() => (file ? URL.createObjectURL(file) : ''), [file]);
+  const [adminInfo, setAdminInfo] = useState(null); const [flagAddr, setFlagAddr] = useState('');
+const isAdmin = !!(wallet && adminInfo && adminInfo.admin === wallet.publicKey.toString());
   const loadLaunches = () => getLaunches().then(setLaunches).catch(() => setLaunches([]));
   useEffect(() => { loadLaunches(); }, []);
   useEffect(() => { if (board.length) getUsernames(board.map(r => r.id)).then(setNames).catch(() => {}); }, [board]);
   useEffect(() => { getLeaderboard(boardType).then(setBoard).catch(() => setBoard([])); }, [boardType]);
   useEffect(() => { if (program) getBondSol(program).then(setBond).catch(() => setBond(null)); }, [program]);
+  useEffect(() => { if (program) getAdmin(program).then(setAdminInfo).catch(() => setAdminInfo(null)); }, [program]);
   useEffect(() => {
     if (!mint) return setCandles(null);
     getCandles(mint, range).then(setCandles).catch(() => setCandles(null));
@@ -46,7 +49,12 @@ const preview = useMemo(() => (file ? URL.createObjectURL(file) : ''), [file]);
     const t = setTimeout(() => getQuote(program, mint, side, n).then(setQuote).catch(() => setQuote(null)), 300);
     return () => clearTimeout(t);
   }, [program, mint, side, amount]);
-
+async function runAdmin(fn, okMsg) {
+  setBusy(true);
+  try { await fn(); notify(okMsg); getAdmin(program).then(setAdminInfo).catch(() => {}); }
+  catch (e) { notify(errMsg(e)); }
+  setBusy(false);
+}
   async function onLaunch() {
     if (!wallet) return notify('Connect your wallet first.');
     if (!program) return notify('Paste your program IDL into src/idl.json.');
@@ -183,7 +191,31 @@ const preview = useMemo(() => (file ? URL.createObjectURL(file) : ''), [file]);
             ))}
           </div>
         </section>
-
+{isAdmin && (
+  <section id="admin">
+    <div className="section-head"><div><div className="eyebrow">Admin only</div><h2>CONTROL ROOM.</h2></div></div>
+    <div className="panel">
+      <p className="note">Trading is {adminInfo.paused ? 'PAUSED' : 'live'}. Fees owed: {adminInfo.feesOwed} SOL</p>
+      <button className="btn primary" style={{ marginTop: 10 }} disabled={busy}
+        onClick={() => runAdmin(() => setPaused(program, wallet, !adminInfo.paused), adminInfo.paused ? 'Trading resumed' : 'Trading paused')}>
+        {adminInfo.paused ? 'Unpause trading' : 'Pause trading'}
+      </button>
+      <button className="btn primary" style={{ marginTop: 10 }} disabled={busy || !adminInfo.feesOwed}
+        onClick={() => runAdmin(() => withdrawFees(program, wallet), 'Fees withdrawn')}>
+        Withdraw fees
+      </button>
+      <input className="input" style={{ marginTop: 16 }} placeholder="Wallet address to flag" value={flagAddr} onChange={(e) => setFlagAddr(e.target.value.trim())} />
+      <button className="btn primary" style={{ marginTop: 10 }} disabled={busy || !flagAddr}
+        onClick={() => runAdmin(() => flagWallet(program, wallet, flagAddr), 'Wallet flagged')}>
+        Flag wallet
+      </button>
+      <button className="btn primary" style={{ marginTop: 10 }} disabled={busy || !flagAddr}
+        onClick={() => runAdmin(() => unflagWallet(program, wallet, flagAddr), 'Wallet unflagged')}>
+        Unflag wallet
+      </button>
+    </div>
+  </section>
+)}
         <section id="how">
           <div className="section-head"><div><div className="eyebrow">Discipline. Transparency. Fairness.</div><h2>HOW SPARTA WORKS.</h2></div></div>
           <div className="steps">
