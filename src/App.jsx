@@ -232,3 +232,57 @@ async function runAdmin(fn, okMsg) {
     </>
   );
 }
+export function claimLocked(program, wallet, mintStr) {
+  const mint = new PublicKey(mintStr);
+  const user = wallet.publicKey;
+  const launch = pda([b('launch'), mint.toBuffer()]);
+  const ata = getAssociatedTokenAddressSync(mint, user);
+  return program.methods.claimLocked()
+    .accounts({
+      launch,
+      position: pda([b('pos'), launch.toBuffer(), user.toBuffer()]),
+      escrow: pda([b('escrow'), launch.toBuffer()]),
+      ownerAta: ata,
+      owner: user,
+      tokenProgram: TOKEN_PROGRAM_ID,
+    })
+    .preInstructions([createAssociatedTokenAccountIdempotentInstruction(user, ata, user, mint)])
+    .rpc();
+}
+
+export function claimBond(program, wallet, mintStr) {
+  const mint = new PublicKey(mintStr);
+  const launch = pda([b('launch'), mint.toBuffer()]);
+  return program.methods.claimBond()
+    .accounts({
+      config: configPda(),
+      launch,
+      bondVault: pda([b('bond'), launch.toBuffer()]),
+      creator: wallet.publicKey,
+      systemProgram: SystemProgram.programId,
+    })
+    .rpc();
+}
+
+export function claimCreatorFees(program, wallet, mintStr) {
+  const mint = new PublicKey(mintStr);
+  const launch = pda([b('launch'), mint.toBuffer()]);
+  return program.methods.claimCreatorFees()
+    .accounts({ config: configPda(), launch, creator: wallet.publicKey })
+    .rpc();
+}
+
+export function slashBond(program, wallet, mintStr) {
+  const mint = new PublicKey(mintStr);
+  const launch = pda([b('launch'), mint.toBuffer()]);
+  return program.methods.slashBond()
+    .accounts({
+      config: configPda(),
+      launch,
+      bondVault: pda([b('bond'), launch.toBuffer()]),
+      solVault: pda([b('sol_vault'), launch.toBuffer()]),
+      admin: wallet.publicKey,
+      systemProgram: SystemProgram.programId,
+    })
+    .rpc();
+}
