@@ -16,5 +16,8 @@ The program id is in `src/config.js`. The IDL needs Anchor 0.30 or newer.
 
 Turn on CORS for your site's domain on the backend.
 
+## Included
+Claiming locked tokens (`claim_locked`), the bond (`claim_bond`) and creator fees (`claim_creator_fees`) are in the Claims panel. Pause, withdraw fees, flag/unflag wallet and slash bond are in the Control Room, shown only to the admin wallet.
+
 ## Not included yet
-Claiming locked tokens (`claim_locked`), claiming the bond, and creator fee claims.
+Updating the config (fees, limits, lock times) and the admin handover (propose/accept admin).
